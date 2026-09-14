@@ -1,0 +1,11 @@
+node_modules/
+frontend/dist/
+backend/target/
+.env
+.env.local
+data/
+tmp/
+deliverables/
+tools/.cache/
+backend/.mvn/cache/
+*.log
