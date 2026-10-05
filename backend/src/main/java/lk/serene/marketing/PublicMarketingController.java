@@ -15,7 +15,10 @@ public class PublicMarketingController {
   @GetMapping("/api/public/packages")
   public List<Promotion> packages() {
     return repo.findAll().stream()
-        .filter(p -> p.status.equals("PUBLISHED") && !p.expiresOn.isBefore(LocalDate.now()))
+        .filter(
+            p ->
+                p.status.equals("PUBLISHED")
+                    && (p.expiresOn == null || !p.expiresOn.isBefore(LocalDate.now())))
         .toList();
   }
 }
