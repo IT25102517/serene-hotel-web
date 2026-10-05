@@ -1,25 +1,19 @@
+import React, { useState } from "react";
+import { Workbench } from "../../shared/Workbench";
+import DepartmentSummary from "../../shared/DepartmentSummary";
 const config = {
   key: "feedback",
-  title: "Guest feedback",
-  role: "Customer relations officer",
-  minor: "Rating summary and complaint status filtering",
   member: 6,
-  remaining:
-    "Verified attendance checks, public review moderation, and automated complaint escalation.",
-  customer: true,
+  role: "Customer relations officer",
+  title: "Guest feedback",
   fields: [
     {
       name: "bookingReference",
-      label: "Reservation reference",
-      type: "text",
+      label: "Wedding",
+      type: "wedding",
       required: true,
     },
-    {
-      name: "customerName",
-      label: "Your name",
-      type: "text",
-      required: true,
-    },
+    { name: "customerName", label: "Your name", type: "text", required: true },
     {
       name: "kind",
       label: "Feedback type",
@@ -31,6 +25,7 @@ const config = {
       label: "Rating (1-5)",
       type: "number",
       required: true,
+      integer: true,
     },
     {
       name: "message",
@@ -43,14 +38,26 @@ const config = {
       label: "Resolution status",
       type: "select:OPEN,IN_PROGRESS,RESOLVED",
       required: true,
+      staffOnly: true,
     },
     {
       name: "response",
       label: "Staff response / resolution",
       type: "textarea",
       required: false,
+      staffOnly: true,
     },
   ],
+  description: "Reviews, concerns and thoughtful responses from our team.",
+  customerTitle: "Feedback & support",
+  createLabel: "Share feedback",
 };
 
+config.Page = (props) => (
+  <>
+    <DepartmentSummary department="feedback" />
+    <Workbench {...props} config={config} />
+  </>
+);
+config.CustomerPage = (props) => <Workbench {...props} config={config} />;
 export default config;

@@ -7,12 +7,32 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/feedback")
 public class FeedbackController extends CrudController<Feedback> {
-  public FeedbackController(FeedbackRepository repo, AuditRepository audit) {
+  @org.springframework.beans.factory.annotation.Autowired
+  private org.springframework.context.ApplicationEventPublisher notifications;
+
+  @Override
+  protected void afterSave(Feedback saved, Authentication a) {
+    if (!Access.role(a, "CUSTOMER") && saved.response != null && !saved.response.isBlank())
+      notifications.publishEvent(
+          new lk.serene.shared.integrations.CustomerNotification(
+              "feedback-" + saved.id + "-" + saved.version,
+              saved.owner,
+              "The Serene team has responded",
+              saved.response));
+  }
+
+  private final WeddingGuard weddings;
+
+  public FeedbackController(FeedbackRepository repo, AuditRepository audit, WeddingGuard weddings) {
     super(repo, audit, "FEEDBACK", true);
+    this.weddings = weddings;
   }
 
   @Override
   protected void validate(Feedback n, Feedback old, Authentication a) {
+    var wedding = weddings.require(n.bookingReference, a);
+    n.bookingReference = wedding.getReference();
+    n.owner = wedding.customerEmail;
     Access.valid(
         java.util.List.of("REVIEW", "COMPLAINT").contains(n.kind), "Invalid Feedback type");
     Access.valid(
