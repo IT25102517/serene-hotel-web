@@ -7,12 +7,19 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/operations")
 public class OperationTaskController extends CrudController<OperationTask> {
-  public OperationTaskController(OperationTaskRepository repo, AuditRepository audit) {
+  private final WeddingGuard weddings;
+
+  public OperationTaskController(
+      OperationTaskRepository repo, AuditRepository audit, WeddingGuard weddings) {
     super(repo, audit, "OPERATIONS", false);
+    this.weddings = weddings;
   }
 
   @Override
   protected void validate(OperationTask n, OperationTask old, Authentication a) {
+    var wedding = weddings.require(n.bookingReference, a);
+    n.bookingReference = wedding.getReference();
+    n.owner = wedding.customerEmail;
     Access.valid(
         java.util.List.of("Catering", "Venue", "Equipment", "Service").contains(n.department),
         "Invalid Department");

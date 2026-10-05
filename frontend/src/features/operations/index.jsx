@@ -1,25 +1,20 @@
+import React, { useState } from "react";
+import DepartmentSummary from "../../shared/DepartmentSummary";
+import { PlanningPanel, EventPlanSetup } from "../../shared/PlanningPanel";
+import { Workbench } from "../../shared/Workbench";
 const config = {
   key: "operations",
-  title: "Hotel operations",
-  role: "Hotel operations manager / staff",
-  minor: "Task filtering and readiness dashboard",
   member: 3,
-  remaining:
-    "Staff account directory, resource stock collision checks, and automatic event-change notifications.",
-  customer: false,
+  role: "Hotel operations manager / staff",
+  title: "Hotel operations",
   fields: [
     {
       name: "bookingReference",
-      label: "Reservation reference",
-      type: "text",
+      label: "Wedding",
+      type: "wedding",
       required: true,
     },
-    {
-      name: "task",
-      label: "Task title",
-      type: "text",
-      required: true,
-    },
+    { name: "task", label: "Task title", type: "text", required: true },
     {
       name: "department",
       label: "Department",
@@ -32,12 +27,7 @@ const config = {
       type: "text",
       required: true,
     },
-    {
-      name: "dueDate",
-      label: "Duty date",
-      type: "date",
-      required: true,
-    },
+    { name: "dueDate", label: "Duty date", type: "date", required: true },
     {
       name: "shift",
       label: "Shift",
@@ -57,6 +47,87 @@ const config = {
       required: true,
     },
   ],
+  description: "Coordinate staff duties, catering, preparation and equipment.",
+  createLabel: "Assign task",
+  customerTitle: "Guests & dining",
 };
-
+const guest = {
+  key: "guest-requirements",
+  title: "Guests & dining requirements",
+  description:
+    "Share your guest numbers, food preferences and accessibility needs.",
+  createLabel: "Add guest requirements",
+  columns: [
+    "bookingReference",
+    "guestCount",
+    "menuPreference",
+    "vegetarianMeals",
+  ],
+  fields: [
+    {
+      name: "bookingReference",
+      label: "Wedding",
+      type: "wedding",
+      required: true,
+    },
+    {
+      name: "guestCount",
+      label: "Total guests",
+      type: "number",
+      integer: true,
+      min: 1,
+      required: true,
+    },
+    {
+      name: "children",
+      label: "Children",
+      type: "number",
+      integer: true,
+      min: 0,
+      required: true,
+    },
+    {
+      name: "vegetarianMeals",
+      label: "Vegetarian meals",
+      type: "number",
+      integer: true,
+      min: 0,
+      required: true,
+    },
+    {
+      name: "menuPreference",
+      label: "Menu preference",
+      type: "text",
+      required: true,
+    },
+    { name: "allergies", label: "Allergies & dietary needs", type: "textarea" },
+    {
+      name: "accessibility",
+      label: "Accessibility requirements",
+      type: "textarea",
+    },
+    { name: "notes", label: "Other guest requirements", type: "textarea" },
+  ],
+};
+config.Page = function OperationsDashboard(props) {
+  const [generation, setGeneration] = useState(0);
+  return (
+    <>
+      <DepartmentSummary department="operations" />
+      <Workbench {...props} config={config} />
+      <Workbench {...props} config={guest} />
+      <EventPlanSetup
+        weddings={props.weddings}
+        onReady={() => setGeneration(generation + 1)}
+      />
+      <PlanningPanel
+        key={"c" + generation}
+        resource="catering"
+        title="Catering plans"
+      />
+      <PlanningPanel resource="duties" title="Staff duty assignments" />
+    </>
+  );
+};
+config.CustomerPage = (props) => <Workbench {...props} config={guest} />;
 export default config;
