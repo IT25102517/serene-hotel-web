@@ -13,6 +13,15 @@ import org.springframework.web.client.RestClient;
 
 @RestController
 public class NewsletterController {
+  @org.springframework.beans.factory.annotation.Autowired
+  private lk.serene.shared.integrations.NotificationService notifications;
+
+  @Value("${MAILERLITE_COUPON_FIELD:serene_discount_code}")
+  private String couponField;
+
+  @Value("${serene.backup-mode:false}")
+  private boolean backupMode;
+
   private final SubscriberRepository repo;
   private final String token, group;
   private final RestClient client;
@@ -40,6 +49,10 @@ public class NewsletterController {
 
   @PostMapping("/api/public/newsletter")
   public synchronized Map<String, String> signup(@Valid @RequestBody Signup req) {
+    if (backupMode)
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
+          "Newsletter signup is unavailable in offline backup mode.");
     String email = req.email.trim().toLowerCase(Locale.ROOT);
     var s =
         repo.findById(email)
@@ -52,17 +65,10 @@ public class NewsletterController {
                   n.syncStatus = "PENDING";
                   return n;
                 });
-    if (token.isBlank() || group.isBlank()) {
-      s.syncStatus = "DEMO_NOT_SENT";
-      repo.save(s);
-      return Map.of(
-          "message",
-          "Demo signup saved locally. MailerLite is not configured; no email was sent.",
-          "coupon",
-          s.coupon,
-          "status",
-          s.syncStatus);
-    }
+    if (token.isBlank() || group.isBlank())
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
+          "Wedding offers signup is temporarily unavailable. Please contact our team.");
     if (!"SYNCED".equals(s.syncStatus)) {
       try {
         Map<?, ?> response =
@@ -70,7 +76,14 @@ public class NewsletterController {
                 .post()
                 .uri("/subscribers")
                 .header("Authorization", "Bearer " + token)
-                .body(Map.of("email", email, "groups", List.of(group)))
+                .body(
+                    Map.of(
+                        "email",
+                        email,
+                        "groups",
+                        List.of(group),
+                        "fields",
+                        Map.of(couponField, s.coupon)))
                 .retrieve()
                 .body(Map.class);
         if (response == null
@@ -86,6 +99,15 @@ public class NewsletterController {
       }
     }
     repo.save(s);
+    notifications.queue(
+        new lk.serene.shared.integrations.CustomerNotification(
+            "newsletter-" + s.coupon,
+            email,
+            "Your Serene wedding offer code",
+            "Thank you for subscribing. Your 10% package offer code is "
+                + s.coupon
+                + ". Present it to the reservations team when requesting your quote. Offer"
+                + " eligibility is confirmed by the hotel."));
     return Map.of(
         "message",
         "Subscribed successfully. Save your 10% wedding package discount code for the front"
